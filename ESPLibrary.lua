@@ -5,10 +5,11 @@ local ESP = {
         Names = false,
         Tracers = false,
         ShowHealth = false,
-        ShowDistance = false, 
+        ShowDistance = false,
         DefaultColor = Color3.fromRGB(255, 255, 255),
         CustomColorFunction = nil,
-        IncludeLocalPlayer = false
+        IncludeLocalPlayer = false,
+        DistanceThreshold = 300
     },
     Connections = {}
 }
@@ -99,8 +100,17 @@ local function CreateESP(object)
             local root = object:FindFirstChild("HumanoidRootPart")
             local humanoid = object:FindFirstChild("Humanoid")
             if root and humanoid then
-                local position, onScreen = Camera:WorldToViewportPoint(root.Position)
                 local distance = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                if distance > ESP.Settings.DistanceThreshold then
+                    box.Visible = false
+                    nameTag.Visible = false
+                    tracer.Visible = false
+                    distanceTag.Visible = false
+                    healthBar.Visible = false
+                    return
+                end
+
+                local position, onScreen = Camera:WorldToViewportPoint(root.Position)
                 local size = Vector2.new(300 / distance, 300 / distance)
 
                 if onScreen then
