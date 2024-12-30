@@ -1,11 +1,11 @@
 local ESP = {
     Objects = {},
     Settings = {
-        Boxes = true,
-        Names = true,
-        Tracers = true,
-        ShowHealth = true,
-        ShowDistance = true, 
+        Boxes = false,
+        Names = false,
+        Tracers = false,
+        ShowHealth = false,
+        ShowDistance = false, 
         DefaultColor = Color3.fromRGB(255, 255, 255),
         CustomColorFunction = nil,
         IncludeLocalPlayer = false
