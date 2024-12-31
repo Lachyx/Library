@@ -1,6 +1,6 @@
 ### ESP Module Documentation
 
-This documentation provides an overview of the functionality, usage, and implementation of the ESP (Extra Sensory Perception) module for Roblox games.
+This documentation provides an overview of the functionality, usage, and implementation of the ESP module for Roblox games.
 
 ---
 
