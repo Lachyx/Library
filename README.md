@@ -84,7 +84,7 @@ The module uses Roblox Executors `Drawing` API to render visuals on the screen. 
 
 ```lua
 -- Initialize ESP module
-local ESP = require(path_to_ESP_module)
+local ESP = loadstring(game:HttpGet('https://raw.githubusercontent.com/Lachyx/Library/refs/heads/main/ESPLibrary.lua'))()
 
 -- Configure settings
 ESP.Settings.Boxes = true
