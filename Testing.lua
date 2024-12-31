@@ -2705,6 +2705,11 @@ do
         Parent = ScreenGui;
     });
 
+    local UICornerOuter = Library:Create('UICorner', {
+    CornerRadius = UDim.new(0, 8);
+    Parent = WatermarkOuter;
+})
+    
     local WatermarkInner = Library:Create('Frame', {
         BackgroundColor3 = Library.MainColor;
         BorderColor3 = Library.AccentColor;
@@ -2713,6 +2718,11 @@ do
         ZIndex = 201;
         Parent = WatermarkOuter;
     });
+
+    local UICornerInner = Library:Create('UICorner', {
+    CornerRadius = UDim.new(0, 8);
+    Parent = WatermarkInner;
+})
 
     Library:AddToRegistry(WatermarkInner, {
         BorderColor3 = 'AccentColor';
