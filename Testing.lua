@@ -2981,7 +2981,7 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
-    local UICornerOuter = Library:Create('UICorner', {
+    local MainCornerOuter = Library:Create('UICorner', {
     CornerRadius = UDim.new(0, 8);
     Parent = Outer;
     })
@@ -2998,9 +2998,9 @@ function Library:CreateWindow(...)
         Parent = Outer;
     });
 
-        local UICornerInner = Library:Create('UICorner', {
+        local MainCornerInner = Library:Create('UICorner', {
     CornerRadius = UDim.new(0, 8);
-    Parent = Outer;
+    Parent = Inner;
     })
 
     Library:AddToRegistry(Inner, {
