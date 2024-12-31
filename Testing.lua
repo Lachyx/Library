@@ -2981,6 +2981,11 @@ function Library:CreateWindow(...)
         Parent = ScreenGui;
     });
 
+    local UICornerInner = Library:Create('UICorner', {
+    CornerRadius = UDim.new(0, 8);
+    Parent = Outer;
+    })
+
     Library:MakeDraggable(Outer, 25);
 
     local Inner = Library:Create('Frame', {
