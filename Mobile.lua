@@ -10,6 +10,7 @@ local LocalPlayer = Players.LocalPlayer;
 local Mouse = LocalPlayer:GetMouse();
 
 local ProtectGui = protectgui or (syn and syn.protect_gui) or (function() end);
+-- hi
 local ScreenGui = Instance.new('ScreenGui');
 ProtectGui(ScreenGui);
 
@@ -31,12 +32,12 @@ local Library = {
     FontColor = Color3.fromRGB(255, 255, 255);
     MainColor = Color3.fromRGB(28, 28, 28);
     BackgroundColor = Color3.fromRGB(20, 20, 20);
-    AccentColor = Color3.fromRGB(119, 221, 119));
+    AccentColor = Color3.fromRGB(119, 221, 119);
     OutlineColor = Color3.fromRGB(50, 50, 50);
     RiskColor = Color3.fromRGB(255, 50, 50),
 
     Black = Color3.new(0, 0, 0);
-    Font = Enum.Font.Code,
+    Font = Enum.Font.Gotham,
 
     OpenedFrames = {};
     DependencyBoxes = {};
@@ -141,7 +142,13 @@ function Library:ApplyTextStroke(Inst)
         Parent = Inst;
     });
 end;
-
+local function GetTableSize(t)
+    local n = 0
+    for _, _ in pairs(t) do
+        n = n + 1
+    end
+    return n   
+end;
 function Library:CreateLabel(Properties, IsHud)
     local _Instance = Library:Create('TextLabel', {
         BackgroundTransparency = 1;
@@ -409,8 +416,9 @@ do
     local Funcs = {};
 
     function Funcs:AddColorPicker(Idx, Info)
-        local ToggleLabel = self.Container;
-        -- local Container = self.Container;
+        local ParentObj = self
+        local ToggleLabel = self.TextLabel;
+        --local Container = self.Container;
 
         assert(Info.Default, 'AddColorPicker: Missing default value.');
 
@@ -418,7 +426,7 @@ do
             Value = Info.Default;
             Transparency = Info.Transparency or 0;
             Type = 'ColorPicker';
-            Title = type(Info.Title) == 'string' and Info.Title or 'Color picker',
+            Title = typeof(Info.Title) == 'string' and Info.Title or 'Color picker',
             Callback = Info.Callback or function(Color) end;
         };
 
@@ -436,7 +444,7 @@ do
             BackgroundColor3 = ColorPicker.Value;
             BorderColor3 = Library:GetDarkerColor(ColorPicker.Value);
             BorderMode = Enum.BorderMode.Inset;
-            Size = UDim2.new(0, 19.6, 0, 9.8);
+            Size = UDim2.new(0, 28, 0, 14);
             ZIndex = 6;
             Parent = ToggleLabel;
         });
@@ -466,7 +474,6 @@ do
             ZIndex = 15;
             Parent = ScreenGui,
         });
-
 
         DisplayFrame:GetPropertyChangedSignal('AbsolutePosition'):Connect(function()
             PickerFrameOuter.Position = UDim2.fromOffset(DisplayFrame.AbsolutePosition.X, DisplayFrame.AbsolutePosition.Y + 18);
@@ -2106,26 +2113,33 @@ do
             Multi = Info.Multi;
             Type = 'Dropdown';
             SpecialType = Info.SpecialType; -- can be either 'Player' or 'Team'
+            Visible = typeof(Info.Visible) ~= "boolean" and true or Info.Visible;
             Callback = Info.Callback or function(Value) end;
+
+            OriginalText = Info.Text; Text = Info.Text;
         };
 
+        local DropdownLabel;
+        local Blank;
+        local CompactBlank;
         local Groupbox = self;
         local Container = Groupbox.Container;
 
         local RelativeOffset = 0;
 
         if not Info.Compact then
-            local DropdownLabel = Library:CreateLabel({
+            DropdownLabel = Library:CreateLabel({
                 Size = UDim2.new(1, 0, 0, 10);
                 TextSize = 14;
                 Text = Info.Text;
                 TextXAlignment = Enum.TextXAlignment.Left;
                 TextYAlignment = Enum.TextYAlignment.Bottom;
+                Visible = Dropdown.Visible;
                 ZIndex = 5;
                 Parent = Container;
             });
 
-            Groupbox:AddBlank(3);
+            CompactBlank = Groupbox:AddBlank(3, Dropdown.Visible);
         end
 
         for _, Element in next, Container:GetChildren() do
@@ -2138,6 +2152,7 @@ do
             BackgroundColor3 = Color3.new(0, 0, 0);
             BorderColor3 = Color3.new(0, 0, 0);
             Size = UDim2.new(1, -4, 0, 20);
+            Visible = Dropdown.Visible;
             ZIndex = 5;
             Parent = Container;
         });
@@ -2195,7 +2210,7 @@ do
             { BorderColor3 = 'Black' }
         );
 
-        if type(Info.Tooltip) == 'string' then
+        if typeof(Info.Tooltip) == 'string' then
             Library:AddToolTip(Info.Tooltip, DropdownOuter)
         end
 
@@ -2214,7 +2229,8 @@ do
         end;
 
         local function RecalculateListSize(YSize)
-            ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X, YSize or (MAX_DROPDOWN_ITEMS * 20 + 2))
+            local Y = YSize or math.clamp(GetTableSize(Dropdown.Values) * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
+            ListOuter.Size = UDim2.fromOffset(DropdownOuter.AbsoluteSize.X + 0.5, Y)
         end;
 
         RecalculateListPosition();
@@ -2307,19 +2323,19 @@ do
             end;
 
             local Count = 0;
-
             for Idx, Value in next, Values do
                 local Table = {};
 
                 Count = Count + 1;
 
-                local Button = Library:Create('Frame', {
+                local Button = Library:Create('TextButton', {
+                    AutoButtonColor = false,
                     BackgroundColor3 = Library.MainColor;
                     BorderColor3 = Library.OutlineColor;
                     BorderMode = Enum.BorderMode.Middle;
                     Size = UDim2.new(1, -1, 0, 20);
+                    Text = '';
                     ZIndex = 23;
-                    Active = true,
                     Parent = Scrolling;
                 });
 
@@ -2363,42 +2379,41 @@ do
                     Library.RegistryMap[ButtonLabel].Properties.TextColor3 = Selected and 'AccentColor' or 'FontColor';
                 end;
 
-                ButtonLabel.InputBegan:Connect(function(Input)
-                    if Input.UserInputType == Enum.UserInputType.MouseButton1 or Input.UserInputType == Enum.UserInputType.Touch then
-                        local Try = not Selected;
+                Button.MouseButton1Click:Connect(function(Input)
+                    local Try = not Selected;
 
-                        if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
-                        else
-                            if Info.Multi then
-                                Selected = Try;
+                    if Dropdown:GetActiveValues() == 1 and (not Try) and (not Info.AllowNull) then
+                    else
+                        if Info.Multi then
+                            Selected = Try;
 
-                                if Selected then
-                                    Dropdown.Value[Value] = true;
-                                else
-                                    Dropdown.Value[Value] = nil;
-                                end;
+                            if Selected then
+                                Dropdown.Value[Value] = true;
                             else
-                                Selected = Try;
+                                Dropdown.Value[Value] = nil;
+                            end;
+                        else
+                            Selected = Try;
 
-                                if Selected then
-                                    Dropdown.Value = Value;
-                                else
-                                    Dropdown.Value = nil;
-                                end;
-
-                                for _, OtherButton in next, Buttons do
-                                    OtherButton:UpdateButton();
-                                end;
+                            if Selected then
+                                Dropdown.Value = Value;
+                            else
+                                Dropdown.Value = nil;
                             end;
 
-                            Table:UpdateButton();
-                            Dropdown:Display();
-
-                            Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
-                            Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
-
-                            Library:AttemptSave();
+                            for _, OtherButton in next, Buttons do
+                                OtherButton:UpdateButton();
+                            end;
                         end;
+
+                        Table:UpdateButton();
+                        Dropdown:Display();
+                        
+                        Library:UpdateDependencyBoxes();
+                        Library:SafeCallback(Dropdown.Callback, Dropdown.Value);
+                        Library:SafeCallback(Dropdown.Changed, Dropdown.Value);
+
+                        Library:AttemptSave();
                     end;
                 end);
 
@@ -2409,6 +2424,11 @@ do
             end;
 
             Scrolling.CanvasSize = UDim2.fromOffset(0, (Count * 20) + 1);
+
+            -- Workaround for silly roblox bug - not sure why it happens but sometimes the dropdown list will be empty
+            -- ... and for some reason refreshing the Visible property fixes the issue??????? thanks roblox!
+            Scrolling.Visible = false;
+            Scrolling.Visible = true;
 
             local Y = math.clamp(Count * 20, 0, MAX_DROPDOWN_ITEMS * 20) + 1;
             RecalculateListSize(Y);
@@ -2836,6 +2856,7 @@ function Library:Notify(Text, Time)
         Position = UDim2.new(0, 4, 0, 0);
         Size = UDim2.new(1, -4, 1, 0);
         Text = Text;
+        RichText = true;
         TextXAlignment = Enum.TextXAlignment.Left;
         TextSize = 14;
         ZIndex = 103;
@@ -2884,7 +2905,7 @@ function Library:CreateWindow(...)
     if type(Config.MenuFadeTime) ~= 'number' then Config.MenuFadeTime = 0.2 end
 
     if typeof(Config.Position) ~= 'UDim2' then Config.Position = UDim2.fromOffset(175, 50) end
-    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(550, 420) end
+    if typeof(Config.Size) ~= 'UDim2' then Config.Size = UDim2.fromOffset(450, 420) end
 
     if Config.Center then
         Config.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -2929,6 +2950,7 @@ function Library:CreateWindow(...)
         Text = Config.Title or '';
         TextXAlignment = Enum.TextXAlignment.Left;
         ZIndex = 1;
+        RichText = true;
         Parent = Inner;
     });
 
@@ -3457,45 +3479,45 @@ function Library:CreateWindow(...)
             -- A bit scuffed, but if we're going from not toggled -> toggled we want to show the frame immediately so that the fade is visible.
             Outer.Visible = true;
 
-            -- task.spawn(function()
-            --     -- TODO: add cursor fade?
-            --     local State = InputService.MouseIconEnabled;
+        --     task.spawn(function()
+        --         -- TODO: add cursor fade?
+        --         local State = InputService.MouseIconEnabled;
 
-            --     local Cursor = Drawing.new('Triangle');
-            --     Cursor.Thickness = 1;
-            --     Cursor.Filled = true;
-            --     Cursor.Visible = true;
+        --         local Cursor = Drawing.new('Triangle');
+        --         Cursor.Thickness = 1;
+        --         Cursor.Filled = true;
+        --         Cursor.Visible = true;
 
-            --     local CursorOutline = Drawing.new('Triangle');
-            --     CursorOutline.Thickness = 1;
-            --     CursorOutline.Filled = false;
-            --     CursorOutline.Color = Color3.new(0, 0, 0);
-            --     CursorOutline.Visible = true;
+        --         local CursorOutline = Drawing.new('Triangle');
+        --         CursorOutline.Thickness = 1;
+        --         CursorOutline.Filled = false;
+        --         CursorOutline.Color = Color3.new(0, 0, 0);
+        --         CursorOutline.Visible = true;
 
-            --     while Toggled and ScreenGui.Parent do
-            --         InputService.MouseIconEnabled = false;
+        --         while Toggled and ScreenGui.Parent do
+        --             InputService.MouseIconEnabled = false;
 
-            --         local mPos = InputService:GetMouseLocation();
+        --             local mPos = InputService:GetMouseLocation();
 
-            --         Cursor.Color = Library.AccentColor;
+        --             Cursor.Color = Library.AccentColor;
 
-            --         Cursor.PointA = Vector2.new(mPos.X, mPos.Y);
-            --         Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6);
-            --         Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16);
+        --             Cursor.PointA = Vector2.new(mPos.X, mPos.Y);
+        --             Cursor.PointB = Vector2.new(mPos.X + 16, mPos.Y + 6);
+        --             Cursor.PointC = Vector2.new(mPos.X + 6, mPos.Y + 16);
 
-            --         CursorOutline.PointA = Cursor.PointA;
-            --         CursorOutline.PointB = Cursor.PointB;
-            --         CursorOutline.PointC = Cursor.PointC;
+        --             CursorOutline.PointA = Cursor.PointA;
+        --             CursorOutline.PointB = Cursor.PointB;
+        --             CursorOutline.PointC = Cursor.PointC;
 
-            --         RenderStepped:Wait();
-            --     end;
+        --             RenderStepped:Wait();
+        --         end;
 
-            --     InputService.MouseIconEnabled = State;
+        --         InputService.MouseIconEnabled = State;
 
-            --     Cursor:Remove();
-            --     CursorOutline:Remove();
-            -- end);
-        end;
+        --         Cursor:Remove();
+        --         CursorOutline:Remove();
+        --     end);
+        -- end;
 
         for _, Desc in next, Outer:GetDescendants() do
             local Properties = {};
