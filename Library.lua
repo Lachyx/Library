@@ -87,7 +87,7 @@ local Library = {
     NotifySide = "Left";
     ShowCustomCursor = false;
     ShowToggleFrameInKeybinds = true;
-    NotifyOnError = true; -- true = Library:Notify for SafeCallback (still warns in the developer console)
+    NotifyOnError = false; -- true = Library:Notify for SafeCallback (still warns in the developer console)
 
     VideoLink = "";
     TotalTabs = 0;
