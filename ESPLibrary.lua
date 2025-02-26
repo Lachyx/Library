@@ -1,11 +1,11 @@
 local ESP = {
     Objects = {},
     Settings = {
-        Boxes = false,
-        Names = false,
-        Tracers = false,
-        ShowHealth = false,
-        ShowDistance = false,
+        Boxes = true,
+        Names = true,
+        Tracers = true,
+        ShowHealth = true,
+        ShowDistance = true,
         DefaultColor = Color3.fromRGB(255, 255, 255),
         CustomColorFunction = nil,
         IncludeLocalPlayer = false,
@@ -29,131 +29,81 @@ local function CreateDrawing(type, properties)
 end
 
 local function GetObjectColor(object)
-    if ESP.Settings.CustomColorFunction then
-        return ESP.Settings.CustomColorFunction(object)
-    end
-    return ESP.Settings.DefaultColor
+    return ESP.Settings.CustomColorFunction and ESP.Settings.CustomColorFunction(object) or ESP.Settings.DefaultColor
 end
 
-local function IsObjectVisible(object)
+local function IsObjectValid(object)
     local root = object:FindFirstChild("HumanoidRootPart")
     local humanoid = object:FindFirstChild("Humanoid")
     return root and humanoid and humanoid.Health > 0
 end
 
-local function ShouldIncludeObject(object)
-    if object == LocalPlayer.Character and not ESP.Settings.IncludeLocalPlayer then
-        return false
-    end
-    return true
+local function ShouldRenderObject(object)
+    return not (object == LocalPlayer.Character and not ESP.Settings.IncludeLocalPlayer)
 end
 
 local function CreateESP(object)
-    local box = CreateDrawing("Square", {
-        Color = ESP.Settings.DefaultColor,
-        Thickness = 1,
-        Filled = false
-    })
+    local elements = {
+        BoxOutline = CreateDrawing("Square", {Thickness = 3, Filled = false, Transparency = 0.5, Color = Color3.fromRGB(0, 0, 0)}),
+        Box = CreateDrawing("Square", {Thickness = 1, Filled = false}),
+        NameTag = CreateDrawing("Text", {Size = 16, Center = true, Outline = true}),
+        HealthBarOutline = CreateDrawing("Square", {Filled = true, Color = Color3.fromRGB(0, 0, 0)}),
+        HealthBar = CreateDrawing("Square", {Filled = true}),
+        DistanceTag = CreateDrawing("Text", {Size = 14, Center = true, Outline = true}),
+        Tracer = CreateDrawing("Line", {Thickness = 2})
+    }
 
-    local nameTag = CreateDrawing("Text", {
-        Text = "",
-        Size = 20,
-        Font = Drawing.Fonts.System,
-        Center = false,
-        Outline = false,
-        OutlineColor = ESP.Settings.DefaultColor,
-        Position = Vector2.new(0, 0),
-        Visible = true,
-        ZIndex = 1,
-        Transparency = 1,
-        Color = ESP.Settings.DefaultColor
-    })
-
-    local healthBar = CreateDrawing("Square", {
-        Color = Color3.fromRGB(0, 255, 0),
-        Thickness = 1,
-        Filled = true,
-        Visible = false
-    })
-
-    local distanceTag = CreateDrawing("Text", {
-        Text = "",
-        Size = 16,
-        Font = Drawing.Fonts.System,
-        Center = false,
-        Outline = false,
-        OutlineColor = ESP.Settings.DefaultColor,
-        Position = Vector2.new(0, 0),
-        Visible = true,
-        ZIndex = 1,
-        Transparency = 1,
-        Color = ESP.Settings.DefaultColor
-    })
-
-    local tracer = CreateDrawing("Line", {
-        Color = ESP.Settings.DefaultColor,
-        Thickness = 1
-    })
+    ESP.Objects[object] = elements
 
     local connection = RunService.RenderStepped:Connect(function()
-        if IsObjectVisible(object) and ShouldIncludeObject(object) then
+        if IsObjectValid(object) and ShouldRenderObject(object) then
             local root = object:FindFirstChild("HumanoidRootPart")
             local humanoid = object:FindFirstChild("Humanoid")
-            if root and humanoid then
-                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
-                if distance > ESP.Settings.DistanceThreshold then
-                    box.Visible = false
-                    nameTag.Visible = false
-                    tracer.Visible = false
-                    distanceTag.Visible = false
-                    healthBar.Visible = false
-                    return
-                end
+            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
 
-                local position, onScreen = Camera:WorldToViewportPoint(root.Position)
-                local size = Vector2.new(300 / distance, 300 / distance)
+            if onScreen and distance <= ESP.Settings.DistanceThreshold then
+                local size = Vector2.new(200 / distance, 300 / distance)
+                local color = GetObjectColor(object)
+                
+                elements.BoxOutline.Visible = ESP.Settings.Boxes
+                elements.BoxOutline.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
+                elements.BoxOutline.Size = size
+                
+                elements.Box.Visible = ESP.Settings.Boxes
+                elements.Box.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
+                elements.Box.Size = size
+                elements.Box.Color = color
+                
+                elements.NameTag.Visible = ESP.Settings.Names
+                elements.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - size.Y / 2 - 10)
+                elements.NameTag.Text = object.Name
+                elements.NameTag.Color = color
 
-                if onScreen then
-                    box.Visible = ESP.Settings.Boxes
-                    nameTag.Visible = ESP.Settings.Names
-                    tracer.Visible = ESP.Settings.Tracers
-                    distanceTag.Visible = ESP.Settings.ShowDistance
-                    healthBar.Visible = ESP.Settings.ShowHealth
+                elements.DistanceTag.Visible = ESP.Settings.ShowDistance
+                elements.DistanceTag.Position = Vector2.new(screenPos.X, screenPos.Y + size.Y / 2 + 5)
+                elements.DistanceTag.Text = string.format("%.1f m", distance)
+                elements.DistanceTag.Color = color
 
-                    box.Position = Vector2.new(position.X - size.X / 2, position.Y - size.Y / 2)
-                    box.Size = size
-                    box.Color = GetObjectColor(object)
+                elements.Tracer.Visible = ESP.Settings.Tracers
+                elements.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                elements.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+                elements.Tracer.Color = color
 
-                    nameTag.Text = object.Name or "Unknown"
-                    nameTag.Position = Vector2.new(position.X, position.Y - size.Y / 2 - 5)
-                    nameTag.Color = GetObjectColor(object)
-
-                    distanceTag.Text = string.format("%.1f m", distance)
-                    distanceTag.Position = Vector2.new(position.X, position.Y + size.Y / 2 + 5)
-                    distanceTag.Color = GetObjectColor(object)
-
-                    tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                    tracer.To = Vector2.new(position.X, position.Y)
-                    tracer.Color = GetObjectColor(object)
-
-                    local healthRatio = humanoid.Health / humanoid.MaxHealth
-                    healthBar.Size = Vector2.new(size.X * healthRatio, 4)
-                    healthBar.Position = Vector2.new(position.X - size.X / 2, position.Y + size.Y / 2 + 10)
-                    healthBar.Color = Color3.fromRGB(255 * (1 - healthRatio), 255 * healthRatio, 0)
-                else
-                    box.Visible = false
-                    nameTag.Visible = false
-                    tracer.Visible = false
-                    distanceTag.Visible = false
-                    healthBar.Visible = false
-                end
+                local healthRatio = humanoid.Health / humanoid.MaxHealth
+                elements.HealthBarOutline.Visible = ESP.Settings.ShowHealth
+                elements.HealthBarOutline.Position = Vector2.new(screenPos.X - size.X / 2 - 7, screenPos.Y - size.Y / 2)
+                elements.HealthBarOutline.Size = Vector2.new(5, size.Y)
+                
+                elements.HealthBar.Visible = ESP.Settings.ShowHealth
+                elements.HealthBar.Position = Vector2.new(screenPos.X - size.X / 2 - 6, screenPos.Y - size.Y / 2 + size.Y * (1 - healthRatio))
+                elements.HealthBar.Size = Vector2.new(3, size.Y * healthRatio)
+                elements.HealthBar.Color = Color3.fromRGB(255 * (1 - healthRatio), 255 * healthRatio, 0)
+            else
+                for _, drawing in pairs(elements) do drawing.Visible = false end
             end
         else
-            box.Visible = false
-            nameTag.Visible = false
-            tracer.Visible = false
-            distanceTag.Visible = false
-            healthBar.Visible = false
+            for _, drawing in pairs(elements) do drawing.Visible = false end
         end
     end)
 
@@ -162,30 +112,27 @@ end
 
 function ESP:AddObject(object)
     if not ESP.Objects[object] then
-        ESP.Objects[object] = true
         CreateESP(object)
     end
 end
 
 function ESP:RemoveObject(object)
-    ESP.Objects[object] = nil
+    if ESP.Objects[object] then
+        for _, drawing in pairs(ESP.Objects[object]) do drawing:Remove() end
+        ESP.Objects[object] = nil
+    end
 end
 
 function ESP:Destruct()
-    for _, connection in ipairs(ESP.Connections) do
-        connection:Disconnect()
-    end
+    for _, connection in ipairs(ESP.Connections) do connection:Disconnect() end
     ESP.Connections = {}
-
-    for _, object in pairs(ESP.Objects) do
-        for _, drawing in ipairs({box, nameTag, tracer, healthBar, distanceTag}) do
-            if drawing then
-                drawing:Remove()
-            end
-        end
+    for _, elements in pairs(ESP.Objects) do
+        for _, drawing in pairs(elements) do drawing:Remove() end
     end
-
     ESP.Objects = {}
+  if cleardrawcache then 
+    cleardrawcache()
+  end
 end
 
 return ESP
