@@ -76,7 +76,7 @@ local function CreateESP(object)
                 elements.Box.Color = color
                 
                 elements.NameTag.Visible = ESP.Settings.Names
-                elements.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - size.Y / 2 - 5)
+                elements.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - size.Y / 2 - 15)
                 elements.NameTag.Text = object.Name
                 elements.NameTag.Color = color
 
