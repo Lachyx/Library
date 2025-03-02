@@ -56,51 +56,68 @@ local function CreateESP(object)
     ESP.Objects[object] = elements
 
     local connection = RunService.RenderStepped:Connect(function()
-        if IsObjectValid(object) and ShouldRenderObject(object) then
-            local root = object:FindFirstChild("HumanoidRootPart")
-            local humanoid = object:FindFirstChild("Humanoid")
-            local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
-            local distance = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
+        if not IsObjectValid(object) or not ShouldRenderObject(object) then
+            for _, drawing in pairs(elements) do drawing.Visible = false end
+            return
+        end
 
-            if onScreen and distance <= ESP.Settings.DistanceThreshold then
-                local size = Vector2.new(200 / distance, 300 / distance)
-                local color = GetObjectColor(object)
-                
-                elements.BoxOutline.Visible = ESP.Settings.Boxes
-                elements.BoxOutline.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
-                elements.BoxOutline.Size = size
-                
-                elements.Box.Visible = ESP.Settings.Boxes
-                elements.Box.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
-                elements.Box.Size = size
-                elements.Box.Color = color
-                
-                elements.NameTag.Visible = ESP.Settings.Names
-                elements.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - size.Y / 2 - 15)
-                elements.NameTag.Text = object.Name
-                elements.NameTag.Color = color
+        local root = object:FindFirstChild("HumanoidRootPart")
+        local humanoid = object:FindFirstChild("Humanoid")
 
-                elements.DistanceTag.Visible = ESP.Settings.ShowDistance
-                elements.DistanceTag.Position = Vector2.new(screenPos.X, screenPos.Y + size.Y / 2 + 5)
-                elements.DistanceTag.Text = string.format("%.1f m", distance)
-                elements.DistanceTag.Color = color
+        if not root or not humanoid then
+            for _, drawing in pairs(elements) do drawing.Visible = false end
+            return
+        end
 
-                elements.Tracer.Visible = ESP.Settings.Tracers
-                elements.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
-                elements.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
-                elements.Tracer.Color = color
+        local screenPos, onScreen = Camera:WorldToViewportPoint(root.Position)
+        local playerRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
 
+        if not playerRoot then
+            for _, drawing in pairs(elements) do drawing.Visible = false end
+            return
+        end
+
+        local distance = (playerRoot.Position - root.Position).Magnitude
+
+        if onScreen and distance <= ESP.Settings.DistanceThreshold then
+            local size = Vector2.new(200 / distance, 300 / distance)
+            local color = GetObjectColor(object)
+
+            elements.BoxOutline.Visible = ESP.Settings.Boxes
+            elements.BoxOutline.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
+            elements.BoxOutline.Size = size
+
+            elements.Box.Visible = ESP.Settings.Boxes
+            elements.Box.Position = Vector2.new(screenPos.X - size.X / 2, screenPos.Y - size.Y / 2)
+            elements.Box.Size = size
+            elements.Box.Color = color
+
+            elements.NameTag.Visible = ESP.Settings.Names
+            elements.NameTag.Position = Vector2.new(screenPos.X, screenPos.Y - size.Y / 2 - 15)
+            elements.NameTag.Text = object.Name
+            elements.NameTag.Color = color
+
+            elements.DistanceTag.Visible = ESP.Settings.ShowDistance
+            elements.DistanceTag.Position = Vector2.new(screenPos.X, screenPos.Y + size.Y / 2 + 5)
+            elements.DistanceTag.Text = string.format("%.1f m", distance)
+            elements.DistanceTag.Color = color
+
+            elements.Tracer.Visible = ESP.Settings.Tracers
+            elements.Tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+            elements.Tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+            elements.Tracer.Color = color
+
+            -- Ensure humanoid health is valid before accessing it
+            if humanoid.MaxHealth > 0 then
                 local healthRatio = humanoid.Health / humanoid.MaxHealth
                 elements.HealthBarOutline.Visible = ESP.Settings.ShowHealth
                 elements.HealthBarOutline.Position = Vector2.new(screenPos.X - size.X / 2 - 7, screenPos.Y - size.Y / 2)
                 elements.HealthBarOutline.Size = Vector2.new(5, size.Y)
-                
+
                 elements.HealthBar.Visible = ESP.Settings.ShowHealth
                 elements.HealthBar.Position = Vector2.new(screenPos.X - size.X / 2 - 6, screenPos.Y - size.Y / 2 + size.Y * (1 - healthRatio))
                 elements.HealthBar.Size = Vector2.new(3, size.Y * healthRatio)
                 elements.HealthBar.Color = Color3.fromRGB(255 * (1 - healthRatio), 255 * healthRatio, 0)
-            else
-                for _, drawing in pairs(elements) do drawing.Visible = false end
             end
         else
             for _, drawing in pairs(elements) do drawing.Visible = false end
@@ -109,6 +126,7 @@ local function CreateESP(object)
 
     table.insert(ESP.Connections, connection)
 end
+
 
 function ESP:AddObject(object)
     if not ESP.Objects[object] then
